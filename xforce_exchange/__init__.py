@@ -7,7 +7,6 @@ import requests
 import base64
 from ipwhois import IPWhois
 
-
 class XFE_Service(Service):
     name = "XForce Exchange Service"
     version = "1.0.0"
@@ -30,6 +29,7 @@ class XFE_Service(Service):
             for key, value in existing_config.iteritems():
                 config[key] = value
         return config
+        
     @staticmethod
     def parse_config(config):
         if not config['xfe_api_key']:
@@ -46,6 +46,7 @@ class XFE_Service(Service):
                                  'config_error': None})
         form = forms.XFEConfigForm
         return form, html
+        
     @staticmethod
     def get_config_details(config):
         display_config = {}
@@ -159,7 +160,6 @@ class XFE_Service(Service):
 
         except Exception as e:
             self._error("Error getting domain report from X-Force Exchange: {0}".format(str(e)))
-
 
     def get_xfe_ipr_malware(self,ip,api_key,api_password):
         try:
