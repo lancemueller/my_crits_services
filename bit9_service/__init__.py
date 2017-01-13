@@ -8,7 +8,7 @@ import requests
 class Bit9Service(Service):
     name = "Bit9 Hash Lookup"
     version = "1.0.0"
-    supported_types  = ['Sample']
+    supported_types  = ['Sample', 'Indicator']
     description = "Bit9 Service to search file hashes"
 
     @staticmethod
@@ -61,28 +61,50 @@ class Bit9Service(Service):
 
         return display_config
 
+
     def run(self, obj, config):
 	try:
 	    key = config.get('bit9_api_key', '')
 	    server = config.get('bit9_server','')
-	    self.get_hash(key,server, obj.md5)
+
+	    self.get_hash(key,server, obj)
+
 	except Exception as e:
 	    self._error("Error: %s" % str(e))
 
-    def get_hash(self, apikey, server, hash):
+    def get_hash(self, apikey, server, obj):
 	try: 
-        	url = server + "/api/bit9platform/v1/filecatalog?q=md5:" + hash
+		url =''
+		if obj._meta['crits_type'] == 'Indicator':
+		    if obj['ind_type'] == 'MD5':
+			url = ''.join((server,"/api/bit9platform/v1/filecatalog?q=md5:",obj['value']))
+			
+		    elif obj['ind_type'] == 'SHA1':    
+                        url = ''.join((server,"/api/bit9platform/v1/filecatalog?q=sha1:",obj['value']))
+
+                    elif obj['ind_type'] == 'SHA256':    
+                        url = ''.join((server,"/api/bit9platform/v1/filecatalog?q=sha256:",obj['value']))
+
+		    else:
+			self._add_result("Service Sucessfully ran", "Indicator type is not searchable in BIT9" )
+		
+		elif obj._meta['crits_type'] == 'Sample':
+		    url = ''.join((server,"/api/bit9platform/v1/filecatalog?q=md5:",obj.md5))
+
+		else:
+		    return
+
         	headers = {'X-Auth-Token': apikey}
         	self._info("Searching Bit9.")
         	response = requests.get(url,headers=headers, verify=False)
         	self._info("Filecatalog query status code: {0}".format(response.status_code))
         	if response.status_code == 200:
-              	    all_json = response.json()
+		    all_json = response.json()
             	    if all_json:
                 	if 'computerId' in all_json[0]:
                     	    hostname = self.get_computer(server,apikey,all_json[0]['computerId'])
                     	    if hostname is not None:
-                        	d = {'Filename': all_json[0]['fileName'], 'Path': all_json[0]['pathName'], 'Publisher': all_json[0]['publisher'], 'ProductName': all_json[0]['productName'], 'Threat': all_json[0]['threat'], 'Filesize': all_json[0]['fileSize']}
+                        	d = {'State': all_json[0]['effectiveState'],'Filename': all_json[0]['fileName'], 'Path': all_json[0]['pathName'], 'Publisher': all_json[0]['publisher'], 'ProductName': all_json[0]['productName'], 'Threat': all_json[0]['threat'], 'Filesize': all_json[0]['fileSize']}
                         	self._add_result('Bit9 Data',hostname,d )
                     	    else:
                         	self._error("Error determining hostname!")
