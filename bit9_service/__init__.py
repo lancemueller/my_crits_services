@@ -61,12 +61,10 @@ class Bit9Service(Service):
 
         return display_config
 
-
     def run(self, obj, config):
 	try:
 	    key = config.get('bit9_api_key', '')
 	    server = config.get('bit9_server','')
-
 	    self.get_hash(key,server, obj)
 
 	except Exception as e:
